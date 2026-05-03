@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>reOS v8.1: Crystal Protocol</title>
+  <style>
+    :root {
+      --accent: #6366f1;
+      --text: #ffffff;
+      --glass: rgba(255, 255, 255, 0.1);
+      --panel-bg: rgba(10, 10, 15, 0.6);
+      --window-bg: rgba(20, 20, 30, 0.4);
+      --border: rgba(255, 255, 255, 0.2);
+      --wallpaper: url("https://awsimages.detik.net.id/community/media/visual/2026/03/13/detective-conan-1773339221057_43.jpeg?w=600&q=90");
+      --blur: blur(25px);
+    }
+
+    .bunny-active { --accent: #ff80ab; --wallpaper: url("https://wallpaperaccess.com/full/2085356.jpg"); --window-bg: rgba(255, 128, 171, 0.2); --border: rgba(255, 128, 171, 0.4); }
+    .uwu-active { --accent: #ff69b4; --wallpaper: url("https://wallpaperaccess.com/full/19150.jpg"); --window-bg: rgba(255, 105, 180, 0.25); }
+    .yuri-active { --accent: #a855f7; --wallpaper: url("https://images6.alphacoders.com/132/1325147.png"); --window-bg: rgba(168, 85, 247, 0.2); --border: rgba(168, 85, 247, 0.4); }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { height: 100vh; background: var(--wallpaper) no-repeat center center fixed; background-size: cover; color: var(--text); overflow: hidden; transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    #boot { position: fixed; inset: 0; background: #050505; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 1s; }
+    .boot-text { font-size: 26px; font-weight: 800; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; animation: glow 2s infinite alternate; }
+    .loader-track { width: 250px; height: 2px; background: rgba(255,255,255,0.1); margin-top: 25px; border-radius: 4px; overflow: hidden; }
+    .loader-fill { width: 0%; height: 100%; background: var(--accent); animation: fill 2.8s forwards; }
+    @keyframes glow { from { text-shadow: 0 0 5px var(--accent); } to { text-shadow: 0 0 20px var(--accent); } }
+    @keyframes fill { to { width: 100%; } }
+
+    .bar { position: absolute; top: 0; width: 100%; height: 32px; background: var(--panel-bg); backdrop-filter: var(--blur); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; border-bottom: 1px solid var(--border); z-index: 1000; }
+    .dock-trigger { position: absolute; bottom: 0; width: 100%; height: 15px; z-index: 998; }
+    .dock { position: absolute; bottom: 15px; left: 50%; transform: translate(-50%, 120px); background: var(--panel-bg); padding: 10px 25px; border-radius: 30px; display: flex; gap: 20px; backdrop-filter: var(--blur); border: 1px solid var(--border); transition: 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 999; }
+    .dock-trigger:hover + .dock, .dock:hover { transform: translate(-50%, 0); }
+    .app-icon { width: 44px; height: 44px; cursor: pointer; transition: 0.2s; }
+    .app-icon:hover { transform: scale(1.2) translateY(-5px); }
+
+    .win { position: absolute; border-radius: 20px; background: var(--window-bg); backdrop-filter: var(--blur); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.5); z-index: 10; }
+    .win-head { height: 45px; background: rgba(255,255,255,0.05); display: flex; align-items: center; padding: 0 20px; cursor: grab; justify-content: space-between; }
+    .win-controls { display: flex; gap: 8px; }
+    .dot { width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: none; }
+    .dot.close { background: #ff5f56; }
+    .dot.min { background: #ffbd2e; }
+    .dot.max { background: #27c93f; }
+    
+    .content { flex: 1; padding: 20px; overflow: auto; display: flex; flex-direction: column; }
+    /* FIXED: This class now strictly removes all padding for full-bleed apps */
+    .content.full-bleed { padding: 0 !important; overflow: hidden !important; }
+    
+    .glass-card { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 15px; padding: 15px; flex: 1; display: flex; flex-direction: column; }
+    .btn { background: var(--accent); color: white; border: none; padding: 10px 15px; border-radius: 12px; cursor: pointer; transition: 0.2s; font-weight: 600; width: 100%; margin-top: 5px; }
+    .input { background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; outline: none; width: 100%; }
+
+    .fullscreen { top: 32px !important; left: 0 !important; width: 100vw !important; height: calc(100vh - 32px) !important; border-radius: 0; }
+    .minimized { opacity: 0; transform: scale(0.8) translateY(100px); pointer-events: none; }
+    
+    iframe.full-window-iframe { width: 100%; height: 100%; border: none; display: block; }
+  </style>
+</head>
+<body id="os-root">
+
+<div id="boot">
+    <div class="boot-text">reOS v8.1 Crystal Protocol</div>
+    <div class="loader-track"><div class="loader-fill"></div></div>
+</div>
+
+<nav class="bar">
+    <div id="status">reOS Crystal Protocol</div>
+    <div id="clock-txt">00:00:00</div>
+</nav>
+
+<div id="desk"></div>
+
+<div class="dock-trigger"></div>
+<div class="dock">
+    <img src="https://img.icons8.com/fluency/512/search.png" class="app-icon" onclick="opWin('reBrowse', 'brw')">
+    <img src="https://img.icons8.com/fluency/512/add-property.png" class="app-icon" onclick="opWin('reApps', 'apps')">
+    <img src="https://img.icons8.com/fluency/512/brain.png" class="app-icon" onclick="opWin('reLearn', 'learn')">
+    <img src="https://img.icons8.com/fluency/512/noted.png" class="app-icon" onclick="opWin('reNotes', 'notes')">
+    <img src="https://img.icons8.com/fluency/512/alarm-clock.png" class="app-icon" onclick="opWin('reTime', 'timer')">
+    <img src="https://i.imgur.com/vHpxGqC.png" class="app-icon" onclick="opWin('Protocols', 'proto')">
+    <img src="https://img.icons8.com/fluency/512/settings.png" class="app-icon" onclick="opWin('reSystem', 'set')">
+</div>
+
+<script>
+    let zIdx = 100;
+    setTimeout(() => { document.getElementById('boot').style.opacity = '0'; setTimeout(() => document.getElementById('boot').remove(), 1000); }, 3000);
+
+    function opWin(name, id) {
+        if(document.getElementById(id)) { 
+            const win = document.getElementById(id);
+            win.classList.remove('minimized');
+            win.style.zIndex = ++zIdx;
+            return; 
+        }
+        const w = document.createElement('div');
+        w.className = 'win'; w.id = id;
+        w.style.width = '800px'; w.style.height = '600px'; 
+        w.style.top = '50px'; w.style.left = '100px';
+        w.style.zIndex = ++zIdx;
+        
+        w.innerHTML = `
+            <div class="win-head">
+                <span style="font-weight:700; font-size:14px;">${name}</span>
+                <div class="win-controls">
+                    <button class="dot min" onclick="toggleMin('${id}')"></button>
+                    <button class="dot max" onclick="toggleMax('${id}')"></button>
+                    <button class="dot close" onclick="document.getElementById('${id}').remove()"></button>
+                </div>
+            </div>
+            <div class="content" id="${id}-c"></div>
+        `;
+        document.getElementById('desk').appendChild(w);
+        drag(w);
+
+        const c = document.getElementById(id+'-c');
+        if(id === 'learn') {
+            c.parentElement.querySelector('.content').classList.add('full-bleed');
+            c.innerHTML = `<iframe src="https://relearn.edgeone.app" class="full-window-iframe"></iframe>`;
+        } else if(id === 'proto') {
+            c.innerHTML = `
+                <div class="glass-card">
+                    <button class="btn" style="background:#ff69b4; margin-bottom:10px" onclick="setMode('uwu')">UWU PROTOCOL</button>
+                    <button class="btn" style="background:#a855f7; margin-bottom:10px" onclick="setMode('yuri')">YURI PROTOCOL</button>
+                    <button class="btn" style="background:#ff80ab; margin-bottom:10px" onclick="setMode('bunny')">BUNNY GIRL MODE 🐰</button>
+                    <button class="btn" style="background:rgba(255,50,50,0.6)" onclick="setMode('default')">DISABLE ALL PROTOCOLS</button>
+                </div>`;
+        } else if(id === 'timer') {
+            c.innerHTML = `
+                <div class="glass-card" style="align-items:center; justify-content:center">
+                    <h1 id="clock-big" style="font-size:64px; margin-bottom:10px">00:00:00</h1>
+                    <input type="time" id="alarm-time" class="input" style="width:200px">
+                    <button class="btn" onclick="setAlarm()">Set Alarm</button>
+                    <p id="alarm-status" style="margin-top:10px; font-size:12px; color:var(--accent)"></p>
+                </div>`;
+        } else if(id === 'apps') {
+            c.innerHTML = `
+                <div class="glass-card">
+                    <input id="an" class="input" placeholder="Application Title">
+                    <textarea id="ac" class="input" style="flex:1" placeholder="URL or HTML Code..."></textarea>
+                    <button class="btn" onclick="makeApp()">Deploy App</button>
+                </div>`;
+        } else if(id === 'notes') {
+            c.innerHTML = `<div class="glass-card"><textarea class="input" style="height:100%; border:none; background:transparent; resize:none" placeholder="Notes..."></textarea></div>`;
+        } else if(id === 'set') {
+           c.innerHTML = `
+                <div class="glass-card">
+                    <p>Wallpaper URL:</p><input class="input" onchange="document.body.style.backgroundImage='url('+this.value+')'">
+                    <button class="btn" onclick="document.body.classList.toggle('light-theme')">Visual Toggle</button>
+                </div>`;
+        } else if(id === 'brw') {
+            c.innerHTML = `<div style="display:flex; gap:10px; margin-bottom:10px"><input id="u" class="input" style="margin:0" placeholder="Search..."><button class="btn" style="width:80px" onclick="const url=document.getElementById('u').value; document.getElementById('f').src=url.includes('.') ? (url.startsWith('http')?url:'https://'+url) : 'https://www.bing.com/search?q='+url">Go</button></div><iframe id="f" src="about:blank" style="background:white; border-radius:12px; flex:1; border:none;"></iframe>`;
+        }
+    }
+
+    function toggleMax(id) { document.getElementById(id).classList.toggle('fullscreen'); }
+    function toggleMin(id) { document.getElementById(id).classList.add('minimized'); }
+
+    function setAlarm() {
+        const time = document.getElementById('alarm-time').value;
+        if(!time) return;
+        document.getElementById('alarm-status').innerText = "Alarm active for " + time;
+        const check = setInterval(() => {
+            const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            if(now === time) { alert("reClock: ALARM TRIGGERED"); clearInterval(check); }
+        }, 1000);
+    }
+
+    function makeApp() {
+        const n = document.getElementById('an').value || "reApp";
+        const content = document.getElementById('ac').value;
+        const d = document.querySelector('.dock');
+        const i = document.createElement('img');
+        i.src = "https://img.icons8.com/fluency/512/box.png"; i.className = "app-icon";
+        i.onclick = () => {
+            const body = opWin(n, 'custom-'+Date.now());
+            if(content.startsWith('http')) {
+                body.classList.add('full-bleed');
+                body.innerHTML = `<iframe src="${content}" class="full-window-iframe"></iframe>`;
+            } else body.innerHTML = `<div class="glass-card">${content}</div>`;
+        };
+        d.appendChild(i);
+        document.getElementById('apps').remove();
+    }
+
+    function setMode(m) {
+        const r = document.body;
+        const s = document.getElementById('status');
+        r.classList.remove('bunny-active', 'uwu-active', 'yuri-active');
+        if(m === 'bunny') { r.classList.add('bunny-active'); s.innerText = "reOS // Lepus Protocol"; }
+        else if(m === 'uwu') { r.classList.add('uwu-active'); s.innerText = "reOS // ◕▿◕✿"; }
+        else if(m === 'yuri') { r.classList.add('yuri-active'); s.innerText = "reOS // Yuri-Core"; }
+        else { s.innerText = "reOS Crystal Protocol"; }
+    }
+
+    function drag(e) {
+        let p1=0,p2=0,p3=0,p4=0;
+        e.querySelector('.win-head').onmousedown = (m) => {
+            if(e.classList.contains('fullscreen')) return;
+            e.style.zIndex = ++zIdx;
+            p3=m.clientX; p4=m.clientY;
+            document.onmouseup = () => document.onmousemove = null;
+            document.onmousemove = (m) => {
+                p1=p3-m.clientX; p2=p4-m.clientY; p3=m.clientX; p4=m.clientY;
+                e.style.top = (e.offsetTop-p2)+"px"; e.style.left = (e.offsetLeft-p1)+"px";
+            };
+        };
+    }
+
+    setInterval(() => { 
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+        document.getElementById('clock-txt').innerText = timeStr;
+        if(document.getElementById('clock-big')) document.getElementById('clock-big').innerText = timeStr;
+    }, 1000);
+</script>
+</body>
+</html>
