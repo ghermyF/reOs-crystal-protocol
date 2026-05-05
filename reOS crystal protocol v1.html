@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>reOS v1: Crystal Protocol copyright 2026</title>
+  <style>
+    :root {
+      --accent: #FFBF00;
+      --text: #ffffff;
+      --glass: rgba(255, 255, 255, 0.1);
+      --panel-bg: rgba(10, 10, 15, 0.6);
+      --window-bg: rgba(20, 20, 30, 0.4);
+      --border: rgba(255, 255, 255, 0.2);
+      --wallpaper: url("https://cdn2.tuoitre.vn/thumb_w/480/471584752817336320/2026/4/17/edit-conan-17764213595521639290129.jpeg");
+      --lock-wallpaper: url("https://cdn2.tuoitre.vn/thumb_w/480/471584752817336320/2026/4/17/edit-conan-17764213595521639290129.jpeg");
+      --blur: blur(25px);
+      --radius: 20px;
+    }
+
+    /* --- PROTOCOLS --- */
+    .bunny-active { --accent: #ff80ab; --wallpaper: url("https://wallpapers-clan.com/wp-content/uploads/2025/04/mai-sakurajima-bunny-dress-sunset-breeze-elegance-desktop-wallpaper-preview.jpg"); --window-bg: rgba(255, 128, 171, 0.2); --border: rgba(255, 128, 171, 0.4); }
+    .uwu-active { --accent: #ff69b4; --wallpaper: url("https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/0bf4e258-b1cb-4612-8e98-89ddec5a5888/landscape/thumb/thumb-0000000000-1920x1080.jpg"); --window-bg: rgba(255, 105, 180, 0.25); }
+    .yuri-active { --accent: #a855f7; --wallpaper: url("https://static0.cbrimages.com/wordpress/wp-content/uploads/2025/06/there-s-no-freaking-way-i-ll-ever-be-your-lover.jpg?q=70&fit=crop&w=825&dpr=1"); --window-bg: rgba(168, 85, 247, 0.2); --border: rgba(168, 85, 247, 0.4); }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { height: 100vh; background: var(--wallpaper) no-repeat center center fixed; background-size: cover; color: var(--text); overflow: hidden; transition: 0.8s; }
+
+    /* --- LOCK SCREEN --- */
+    #lock-screen { position: fixed; inset: 0; z-index: 9000; background: var(--lock-wallpaper) no-repeat center center fixed; background-size: cover; display: none; flex-direction: column; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    #lock-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 80px 0; cursor: pointer; }
+    .lock-time { font-size: 140px; font-weight: 800; color: var(--accent); text-shadow: 0 0 20px rgba(255, 191, 0, 0.4); animation: textGlow 4s infinite ease-in-out; }
+    .lock-date { font-size: 28px; font-weight: 600; color: var(--accent); margin-top: -20px; letter-spacing: 4px; text-transform: uppercase; }
+    @keyframes textGlow { 50% { transform: scale(1.02); text-shadow: 0 0 40px rgba(255, 191, 0, 0.6); } }
+
+    #login-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(25px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.5s; }
+    .user-avatar { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 20px; border: 2px solid var(--border); background: var(--glass); }
+    .user-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+    /* --- UI ELEMENTS --- */
+    .bar { position: absolute; top: 0; width: 100%; height: 32px; background: var(--panel-bg); backdrop-filter: var(--blur); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; border-bottom: 1px solid var(--border); z-index: 1000; }
+    .dock { position: absolute; bottom: 15px; left: 50%; transform: translate(-50%, 0); background: var(--panel-bg); padding: 10px 25px; border-radius: 30px; display: flex; gap: 20px; backdrop-filter: var(--blur); border: 1px solid var(--border); z-index: 999; }
+    .app-icon { width: 44px; height: 44px; cursor: pointer; transition: 0.2s; border-radius: 10px; }
+    .app-icon:hover { transform: scale(1.2) translateY(-5px); }
+
+    /* --- WINDOW SYSTEM --- */
+    .win { position: absolute; border-radius: var(--radius); background: var(--window-bg); backdrop-filter: var(--blur); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.5); z-index: 10; transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s, transform 0.3s, opacity 0.3s; }
+    .win-head { height: 45px; background: rgba(255,255,255,0.05); display: flex; align-items: center; padding: 0 20px; cursor: grab; justify-content: space-between; }
+    .dot { width: 14px; height: 14px; border-radius: 50%; border: none; cursor: pointer; margin-left: 5px; }
+    .win.maximized { width: 100vw !important; height: calc(100vh - 32px) !important; top: 32px !important; left: 0 !important; border-radius: 0; }
+    .win.minimized { transform: translateY(500px) scale(0); opacity: 0; pointer-events: none; }
+
+    .content { flex: 1; padding: 20px; overflow: auto; display: flex; flex-direction: column; }
+    .full-bleed { padding: 0 !important; overflow: hidden !important; }
+    iframe { width: 100%; height: 100%; border: none; }
+    
+    .btn { background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 800; width: 100%; margin-top: 5px; }
+    .input { background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; width: 100%; outline: none; }
+    .lock-screen-up { transform: translateY(-100%); }
+  </style>
+</head>
+<body id="os-root">
+
+<div id="lock-screen">
+    <div id="lock-content" onclick="showLogin()">
+        <div style="text-align: center; margin-top: 40px;">
+            <div class="lock-time" id="lock-time">00:00</div>
+            <div class="lock-date" id="lock-date">Monday, 1 January</div>
+        </div>
+        <p style="margin-bottom: 20px; opacity: 0.6; color: var(--accent); font-weight: bold; letter-spacing: 2px;">CLICK TO ACCESS</p>
+    </div>
+    <div id="login-ui">
+        <div style="width: 320px; text-align: center;">
+            <div class="user-avatar"><img id="pfp-display" src="https://img.icons8.com/fluency/512/user-male-circle.png"></div>
+            <h2 id="auth-title" style="color: var(--accent); margin-bottom: 20px;">User</h2>
+            <input type="password" id="auth-pass" class="input" placeholder="Password" style="text-align:center">
+            <button class="btn" onclick="handleAuth()">Sign In</button>
+        </div>
+    </div>
+</div>
+
+<nav class="bar">
+    <div id="status">reOS Crystal Protocol</div>
+    <div id="clock-txt">00:00:00</div>
+</nav>
+
+<div id="desk"></div>
+
+<div class="dock" id="main-dock">
+    <img src="https://img.icons8.com/fluency/512/search.png" class="app-icon" onclick="opWin('reBrowse', 'brw')">
+    <img src="https://img.icons8.com/fluency/512/brain.png" class="app-icon" onclick="opWin('reLearn', 'learn')">
+    <img src="https://img.icons8.com/fluency/512/hammer.png" class="app-icon" onclick="opWin('reForge', 'forge')">
+    <img src="https://img.icons8.com/fluency/512/noted.png" class="app-icon" onclick="opWin('reNotes', 'notes')">
+    <img src="https://i.imgur.com/vHpxGqC.png" class="app-icon" onclick="opWin('Protocols', 'proto')">
+    <img src="https://img.icons8.com/fluency/512/settings.png" class="app-icon" onclick="opWin('reSystem', 'set')">
+</div>
+
+<script>
+    let zIdx = 100;
+
+    window.onload = () => { applyPrefs(); initLockScreen(); loadCustomApps(); };
+
+    function applyPrefs() {
+        const savedPfp = localStorage.getItem('reOS_pfp');
+        const savedLockWall = localStorage.getItem('reOS_lockWallpaper');
+        const savedDeskWall = localStorage.getItem('reOS_deskWallpaper');
+        if(savedPfp) document.getElementById('pfp-display').src = savedPfp;
+        if(savedLockWall) document.documentElement.style.setProperty('--lock-wallpaper', `url(${savedLockWall})`);
+        if(savedDeskWall) document.documentElement.style.setProperty('--wallpaper', `url(${savedDeskWall})`);
+    }
+
+    function initLockScreen() {
+        document.getElementById('lock-screen').style.display = 'flex';
+        document.getElementById('auth-title').innerText = localStorage.getItem('reOS_username') || "User";
+    }
+
+    function showLogin() { 
+        document.getElementById('lock-content').style.opacity = '0';
+        document.getElementById('login-ui').style.opacity = '1'; 
+        document.getElementById('login-ui').style.pointerEvents = 'all'; 
+    }
+
+    function handleAuth() {
+        const pass = document.getElementById('auth-pass').value;
+        const stored = localStorage.getItem('reOS_password');
+        if (!stored || pass === stored) {
+            if(!stored) localStorage.setItem('reOS_password', pass);
+            document.getElementById('lock-screen').classList.add('lock-screen-up');
+        }
+    }
+
+    function loadCustomApps() {
+        const apps = JSON.parse(localStorage.getItem('reOS_custom_apps') || "[]");
+        const dock = document.getElementById('main-dock');
+        apps.forEach(app => {
+            if(!document.getElementById('icon-'+app.id)) {
+                const img = document.createElement('img');
+                img.src = app.icon;
+                img.id = 'icon-'+app.id;
+                img.className = 'app-icon';
+                img.onclick = () => opWin(app.name, app.id, app.url, app.html);
+                dock.appendChild(img);
+            }
+        });
+    }
+
+    function forgeApp() {
+        const name = document.getElementById('f-name').value;
+        const url = document.getElementById('f-url').value;
+        const html = document.getElementById('f-html').value;
+        const icon = document.getElementById('f-icon').value || 'https://img.icons8.com/fluency/512/code.png';
+        if(!name) return;
+        const apps = JSON.parse(localStorage.getItem('reOS_custom_apps') || "[]");
+        apps.push({ name, url: html ? null : url, html: html || null, icon, id: 'app-' + Date.now() });
+        localStorage.setItem('reOS_custom_apps', JSON.stringify(apps));
+        loadCustomApps();
+        document.getElementById('forge-c').innerHTML = `<h3 style="color:var(--accent)">Forged!</h3><button class="btn" onclick="opWin('reForge','forge')">Reset</button>`;
+    }
+
+    function opWin(name, id, customUrl = null, rawHtml = null) {
+        let existing = document.getElementById(id);
+        if(existing) { existing.classList.remove('minimized'); existing.style.zIndex = ++zIdx; return; }
+
+        const w = document.createElement('div');
+        w.className = 'win'; w.id = id;
+        w.style.width = '750px'; w.style.height = '500px'; w.style.top = '80px'; w.style.left = '100px'; w.style.zIndex = ++zIdx;
+        w.innerHTML = `<div class="win-head"><span>${name}</span><div class="win-controls">
+            <button class="dot" style="background:#ffbd2e" onclick="toggleMin('${id}')"></button>
+            <button class="dot" style="background:#27c93f" onclick="toggleMax('${id}')"></button>
+            <button class="dot" style="background:#ff5f56" onclick="this.closest('.win').remove()"></button>
+        </div></div><div class="content" id="${id}-c"></div>`;
+        document.getElementById('desk').appendChild(w);
+        drag(w);
+
+        const c = document.getElementById(id+'-c');
+        if(rawHtml) {
+            c.classList.add('full-bleed');
+            const frame = document.createElement('iframe');
+            c.appendChild(frame);
+            const doc = frame.contentWindow.document;
+            doc.open(); doc.write(rawHtml); doc.close();
+        } else if(customUrl) {
+            c.classList.add('full-bleed');
+            c.innerHTML = `<iframe src="${customUrl}"></iframe>`;
+        } else if(id === 'learn') { c.classList.add('full-bleed'); c.innerHTML = `<iframe src="https://relearn.edgeone.app"></iframe>`; }
+        else if(id === 'notes') {
+            c.innerHTML = `<textarea id="nt" class="input" style="height:100%; background:transparent; border:none; resize:none">${localStorage.getItem('reOS_notes_data') || ""}</textarea>`;
+            document.getElementById('nt').addEventListener('input', (e) => localStorage.setItem('reOS_notes_data', e.target.value));
+        } else if(id === 'forge') {
+            c.innerHTML = `<h3>reForge</h3><input id="f-name" class="input" placeholder="Name"><input id="f-icon" class="input" placeholder="Icon URL">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"><input id="f-url" class="input" placeholder="URL"><textarea id="f-html" class="input" placeholder="Raw HTML"></textarea></div>
+            <button class="btn" onclick="forgeApp()">Forge</button>`;
+        } else if(id === 'proto') {
+            c.innerHTML = `<button class="btn" onclick="setMode('yuri')" style="background:#a855f7; color:white">YURI</button>
+            <button class="btn" onclick="setMode('uwu')" style="background:#ff69b4; color:white; margin-top:10px">UWU</button>
+            <button class="btn" onclick="setMode('default')" style="margin-top:10px">RESET</button>`;
+        } else if(id === 'set') {
+            c.innerHTML = `<button class="btn" onclick="factoryReset()" style="background:#ff5f56; color:white">FACTORY RESET</button>`;
+        }
+    }
+
+    function toggleMax(id) { document.getElementById(id).classList.toggle('maximized'); }
+    function toggleMin(id) { document.getElementById(id).classList.add('minimized'); }
+    function factoryReset() { if(confirm("Wipe all?")) { localStorage.clear(); location.reload(); } }
+    function setMode(m) {
+        document.body.classList.remove('bunny-active', 'uwu-active', 'yuri-active');
+        if(m !== 'default') document.body.classList.add(m + '-active');
+    }
+
+    function drag(e) {
+        let h = e.querySelector('.win-head');
+        h.onmousedown = (m) => {
+            if(e.classList.contains('maximized')) return;
+            e.style.zIndex = ++zIdx;
+            let p3=m.clientX, p4=m.clientY;
+            document.onmousemove = (m) => {
+                let p1=p3-m.clientX, p2=p4-m.clientY; p3=m.clientX; p4=m.clientY;
+                e.style.top = (e.offsetTop-p2)+"px"; e.style.left = (e.offsetLeft-p1)+"px";
+            };
+            document.onmouseup = () => document.onmousemove = null;
+        };
+    }
+
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock-txt').innerText = now.toLocaleTimeString();
+        document.getElementById('lock-time').innerText = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('lock-date').innerText = now.toLocaleDateString([], {weekday:'long', day:'numeric', month:'long'});
+    }, 1000);
+
+    function opWin(name, id, customUrl = null, rawHtml = null) {
+        let existing = document.getElementById(id);
+        if(existing) { existing.classList.remove('minimized'); existing.style.zIndex = ++zIdx; return; }
+
+        const w = document.createElement('div');
+        w.className = 'win'; w.id = id;
+        w.style.width = '750px'; w.style.height = '500px'; w.style.top = '80px'; w.style.left = '100px'; w.style.zIndex = ++zIdx;
+        w.innerHTML = `<div class="win-head"><span>${name}</span><div class="win-controls">
+            <button class="dot" style="background:#ffbd2e" onclick="toggleMin('${id}')"></button>
+            <button class="dot" style="background:#27c93f" onclick="toggleMax('${id}')"></button>
+            <button class="dot" style="background:#ff5f56" onclick="this.closest('.win').remove()"></button>
+        </div></div><div class="content" id="${id}-c"></div>`;
+        document.getElementById('desk').appendChild(w);
+        drag(w);
+
+        const c = document.getElementById(id+'-c');
+
+        // Handling Content Logic
+        if(rawHtml) {
+            c.classList.add('full-bleed');
+            const frame = document.createElement('iframe');
+            c.appendChild(frame);
+            const doc = frame.contentWindow.document;
+            doc.open(); doc.write(rawHtml); doc.close();
+        } else if(customUrl) {
+            c.classList.add('full-bleed');
+            c.innerHTML = `<iframe src="${customUrl}"></iframe>`;
+        } else {
+            // System App Routing
+            if(id === 'learn') { 
+                c.classList.add('full-bleed'); 
+                c.innerHTML = `<iframe src="https://relearn.edgeone.app"></iframe>`; 
+            }
+            else if(id === 'notes') {
+                c.innerHTML = `<textarea id="nt" class="input" style="height:100%; background:transparent; border:none; resize:none">${localStorage.getItem('reOS_notes_data') || ""}</textarea>`;
+                document.getElementById('nt').addEventListener('input', (e) => localStorage.setItem('reOS_notes_data', e.target.value));
+            } 
+            else if(id === 'forge') {
+                c.innerHTML = `<h3>reForge</h3><input id="f-name" class="input" placeholder="Name"><input id="f-icon" class="input" placeholder="Icon URL">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"><input id="f-url" class="input" placeholder="URL"><textarea id="f-html" class="input" placeholder="Raw HTML"></textarea></div>
+                <button class="btn" onclick="forgeApp()">Forge</button>`;
+            } 
+            else if(id === 'proto') {
+                c.innerHTML = `<button class="btn" onclick="setMode('yuri')" style="background:#a855f7; color:white">YURI</button>
+                <button class="btn" onclick="setMode('uwu')" style="background:#ff69b4; color:white; margin-top:10px">UWU</button>
+                <button class="btn" onclick="setMode('default')" style="margin-top:10px">RESET</button>`;
+            } 
+            // RESTORED CUSTOMIZATION UI
+            else if(id === 'set') {
+                c.innerHTML = `
+                    <h3 style="margin-bottom:15px;">Appearance & Identity</h3>
+                    <p style="font-size:12px; margin-bottom:5px;">Profile Picture URL</p>
+                    <input class="input" placeholder="https://..." onchange="localStorage.setItem('reOS_pfp', this.value); applyPrefs()">
+                    
+                    <p style="font-size:12px; margin-bottom:5px; margin-top:10px;">Desktop Wallpaper URL</p>
+                    <input class="input" placeholder="https://..." onchange="localStorage.setItem('reOS_deskWallpaper', this.value); applyPrefs()">
+                    
+                    <p style="font-size:12px; margin-bottom:5px; margin-top:10px;">Lock Screen Wallpaper URL</p>
+                    <input class="input" placeholder="https://..." onchange="localStorage.setItem('reOS_lockWallpaper', this.value); applyPrefs()">
+                    
+                    <div style="margin-top:30px; border-top:1px solid var(--border); padding-top:15px;">
+                        <p style="color:#ff5f56; font-size:12px; margin-bottom:10px;">System Actions</p>
+                        <button class="btn" onclick="factoryReset()" style="background:#ff5f56; color:white">FACTORY RESET</button>
+                    </div>`;
+            }
+        }
+    }
+
+
+</script>
+</script>
+</body>
+</html>
